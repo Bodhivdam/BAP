@@ -1,0 +1,117 @@
+// This version isn't functioning properly, the timer function isn't working as intended.
+
+#include "PowerGridSandbox.h"
+#include <chrono>
+#include <thread>
+#include <atomic>
+
+// Random function:
+// Function to perform specific tasks
+void taskFunction(std::atomic<bool>& stopFlag) {
+    // Implement your task here
+    while (!stopFlag) {
+        std::cout << "Would you like to increase the generator's output? (yes/no): ";
+        std::string userInput;
+        std::cin >> userInput;
+
+        if (userInput == "yes") {
+            std::cout << "Enter the new output value: ";
+            int newOutput;
+            std::cin >> newOutput;
+            // Handle the new output value here (e.g., update generator's output)
+            std::cout << "Generator's output increased to: " << newOutput << std::endl;
+        } else if (userInput == "no") {
+            std::cout << "Generator's output remains unchanged." << std::endl;
+        } else {
+            std::cout << "Invalid input. Please enter 'yes' or 'no'." << std::endl;
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1)); // Wait for 1 second
+    }
+}
+
+int main() {
+
+    // Initialization
+
+
+    int gridSize = 10;
+    //std::cout << "Enter the size of the grid: ";
+    //std::cin >> gridSize;
+
+    float slope = 0.001;   // Line loses 0.1% of the input per unit of distance
+//    std::cout << "Enter the slope for line losses calculation: ";
+//    std::cin >> slope;
+
+    PowerGridSandbox grid(gridSize, slope);
+
+    int generatorCount = 1;
+    //std::cout << "Enter the number of generators: ";
+    //std::cin >> generatorCount;
+
+    for (int i = 0; i < generatorCount; ++i) {
+        int row = 0, column = 0;
+        float power = 100;
+        //std::cout << "Enter details for generator " << i + 1 << " (row column power): ";
+        //std::cin >> row >> column >> power;
+        grid.addGenerator(row, column, power);
+    }
+
+    int consumerCount = 1;
+//    std::cout << "Enter the number of consumers: ";
+//    std::cin >> consumerCount;
+
+    for (int i = 0; i < consumerCount; ++i) {
+        int row = 0, column = 5;
+        float power = 100;
+//        std::cout << "Enter details for consumer " << i + 1 << " (row column power): ";
+//        std::cin >> row >> column >> power;
+        grid.addConsumer(row, column, power);
+    }
+
+    int connectionCount = 1;
+//    std::cout << "Enter the number of connections: ";
+//    std::cin >> connectionCount;
+
+    for (int i = 0; i < connectionCount; ++i) {
+        int fromRow = 0, fromColumn = 0, toRow = 0, toColumn = 5;
+        float capacity = 100, powerFlow = 100, direction = 0;
+//        std::cout << "Enter details for connection " << i + 1 << " (fromRow fromColumn toRow toColumn capacity powerFlow direction): ";
+//        std::cin >> fromRow >> fromColumn >> toRow >> toColumn >> capacity >> powerFlow >> direction;
+        grid.addConnection(fromRow, fromColumn, toRow, toColumn, capacity, powerFlow, direction);
+    }
+
+
+    // Timer stuff
+
+    // Create a flag to signal the task thread to stop
+    std::atomic<bool> stopFlag(false);
+
+    // Start a separate thread for taskFunction
+    std::thread taskThread(taskFunction, std::ref(stopFlag));
+    // Main loop for user input
+    std::string userInput;
+
+
+    //  grid.printConnections(); Include this one?
+
+    while (true) {
+        std::cin >> userInput;
+        if (userInput == "quit") {
+            // Set the stopFlag to true to signal the task thread to stop
+            stopFlag = true;
+            break;
+        } else {
+            // Handle other user input here
+            std::cout << "User input: " << userInput << std::endl;
+        }
+    }
+
+    // Wait for the task thread to finish
+    taskThread.join();
+
+    grid.calculatePowerFlows();
+    grid.printConnections();
+
+    return 0;
+}
